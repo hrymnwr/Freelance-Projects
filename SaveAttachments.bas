@@ -12,7 +12,7 @@ Option Explicit
 Public Sub SaveAttachments()
     Dim objOL As Outlook.Application
     Set objOL = CreateObject("outlook.application")
-
+    
     Dim objSlctFolder As Outlook.MAPIFolder
     Dim objRecordedFolder As Outlook.MAPIFolder
     Dim objMsg As Outlook.MailItem 'Object
@@ -24,15 +24,19 @@ Public Sub SaveAttachments()
     Dim strDeletedFiles As String
     Dim selectedOlFolder As String
     
+    Dim oDL As Object
+    Set oDL = FOLDER_EXP(CurDir)
+    
     ' Get the path to your My Documents folder
-    strFolderpath = CreateObject("WScript.Shell").SpecialFolders(16)
-    strFolderpath = strFolderpath & "\Attachments\"
+    ' Will not be used
+'    strFolderpath = CreateObject("WScript.Shell").SpecialFolders(16)
+'    strFolderpath = strFolderpath & "\Attachments\"
     
     'On Error Resume Next
     Debug.Print (separator1)
     Debug.Print ("STARTING PROCESS...")
     selectedOlFolder = FolderPick
-    
+
     If selectedOlFolder <> "Cancel" Then
         ' Gets parent folder of the default inbox
         Set objSlctFolder = objOL.GetNamespace("MAPI").GetDefaultFolder(olFolderInbox).Parent
@@ -40,7 +44,7 @@ Public Sub SaveAttachments()
         Set objRecordedFolder = objSlctFolder.Folders("Recorded")
         ' Gets the selected folder from the parent folder
         Set objSlctFolder = objSlctFolder.Folders(selectedOlFolder)
-        
+
         ' Loop through mails in folder
         For Each objMsg In objSlctFolder.Items
             ' This code only strips attachments from mail items.
@@ -64,7 +68,7 @@ Public Sub SaveAttachments()
                     strFile = objAttachments.Item(i).FileName
                     Debug.Print strFile
                     ' Combine with the path to the Temp folder.
-                    strFile = strFolderpath & strFile
+                    strFile = oDL & "\" & strFile
                     Debug.Print ("Saving..." & strFile)
 
                     ' Save the attachment as a file.
@@ -84,7 +88,7 @@ Public Sub SaveAttachments()
                     End If
 
                     'Use the MsgBox command to troubleshoot. Remove it from the final code.
-                    MsgBox strDeletedFiles
+                    'MsgBox strDeletedFiles
                 Next
                 ' Adds the filename string to the message body and save it
                 ' Check for HTML body
@@ -98,11 +102,11 @@ Public Sub SaveAttachments()
                 objMsg.Save
                 objMsg.UnRead = False
                 objMsg.Move objRecordedFolder
-                
+
             Else
                 ' Placeholder
             End If
-            
+
         Next
     Else
         Debug.Print (separator2)
@@ -170,3 +174,32 @@ Function separator2() As String
     Next j
     separator2 = sprtr
 End Function
+
+' Author: Jacob Stewart
+Public Function FOLDER_EXP(vSTR As Variant) As Object
+
+    Dim xlAPP As Object
+    Set xlAPP = CreateObject("Excel.Application")
+    xlAPP.Visible = False
+    Dim fd As Office.FileDialog
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Dim v
+    
+    ps = xlAPP.PathSeparator
+    
+    With xlAPP.Application.FileDialog(msoFileDialogFolderPicker)
+        .InitialFileName = vSTR
+        .AllowMultiSelect = True
+        If .Show = -1 Then v = .SelectedItems(1)
+    End With
+    
+    If Not v <> "" Then Exit Function
+    
+    Set FOLDER_EXP = fso.GetFolder(v)
+    
+    xlAPP.Quit
+    Set xlAPP = Nothing
+End Function
+
